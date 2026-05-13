@@ -5,11 +5,12 @@ import type { Workout } from "../types/home";
 
 type WorkoutCardProps = {
   workout: Workout;
+  onPress: () => void;
 };
 
-export function WorkoutCard({ workout }: WorkoutCardProps) {
+export function WorkoutCard({ workout, onPress }: WorkoutCardProps) {
   return (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.cardHeader}>
         <View style={styles.avatar}>
           <Text style={styles.avatarIcon}>○</Text>

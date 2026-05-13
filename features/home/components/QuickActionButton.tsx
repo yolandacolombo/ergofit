@@ -5,11 +5,12 @@ import type { QuickAction } from "../types/home";
 
 type QuickActionButtonProps = {
   action: QuickAction;
+  onPress: () => void;
 };
 
-export function QuickActionButton({ action }: QuickActionButtonProps) {
+export function QuickActionButton({ action, onPress }: QuickActionButtonProps) {
   return (
-    <TouchableOpacity style={styles.button}>
+    <TouchableOpacity style={styles.button} onPress={onPress}>
       <Text style={styles.text}>{action.label}</Text>
       <Text style={styles.arrow}>›</Text>
     </TouchableOpacity>

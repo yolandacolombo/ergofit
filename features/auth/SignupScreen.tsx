@@ -14,6 +14,7 @@ import {
 
 import { signupWithEmail } from "@/features/auth/services/auth-service";
 import { homeColors } from "@/features/home/constants/colors";
+import { supabaseConfigError } from "@/lib/supabase";
 
 const { height } = Dimensions.get("window");
 
@@ -21,6 +22,7 @@ type SignupField =
   | "email"
   | "name"
   | "difficulty"
+  | "frequency"
   | "password"
   | "confirmPassword";
 
@@ -29,10 +31,13 @@ export function SignupScreen() {
     email: "",
     name: "",
     difficulty: "",
+    frequency: "",
     password: "",
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const configError = supabaseConfigError;
+  const isConfigInvalid = Boolean(configError);
 
   function updateField(field: SignupField, value: string) {
     setForm((currentForm) => ({
@@ -46,6 +51,7 @@ export function SignupScreen() {
       !form.email.trim() ||
       !form.name.trim() ||
       !form.difficulty.trim() ||
+      !form.frequency.trim() ||
       !form.password ||
       !form.confirmPassword
     ) {
@@ -69,6 +75,7 @@ export function SignupScreen() {
         email: form.email,
         name: form.name,
         difficulty: form.difficulty,
+        frequency: form.frequency,
         password: form.password,
       });
 
@@ -76,7 +83,7 @@ export function SignupScreen() {
         "Cadastro criado",
         "Verifique seu email se a confirmacao estiver ativa no Supabase.",
       );
-      router.replace("/");
+      router.replace("/login");
     } catch (error) {
       const message =
         error instanceof Error
@@ -125,6 +132,12 @@ export function SignupScreen() {
             />
 
             <RequiredInput
+              placeholder="Frequência semanal desejada"
+              value={form.frequency}
+              onChangeText={(value) => updateField("frequency", value)}
+            />
+
+            <RequiredInput
               placeholder="Senha"
               value={form.password}
               onChangeText={(value) => updateField("password", value)}
@@ -139,9 +152,15 @@ export function SignupScreen() {
             />
           </View>
 
+          {configError ? (
+            <View style={styles.configErrorBox}>
+              <Text style={styles.configErrorText}>{configError}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity
-            disabled={isLoading}
-            style={[styles.signupButton, isLoading && styles.disabledButton]}
+            disabled={isLoading || isConfigInvalid}
+            style={[styles.signupButton, (isLoading || isConfigInvalid) && styles.disabledButton]}
             onPress={handleSignup}
           >
             <Text style={styles.signupButtonText}>
@@ -268,6 +287,17 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.72,
+  },
+  configErrorBox: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: "#FFE5E2",
+    padding: 14,
+  },
+  configErrorText: {
+    color: "#D94B43",
+    fontSize: 14,
+    lineHeight: 20,
   },
   signupButtonText: {
     color: "#FFFFFF",

@@ -7,9 +7,10 @@ import { QuickActionButton } from "./QuickActionButton";
 type HomeHeroProps = {
   user: UserProfile;
   actions: QuickAction[];
+  onActionPress: (route: string) => void;
 };
 
-export function HomeHero({ user, actions }: HomeHeroProps) {
+export function HomeHero({ user, actions, onActionPress }: HomeHeroProps) {
   return (
     <View style={styles.hero}>
       <View style={styles.header}>
@@ -27,7 +28,11 @@ export function HomeHero({ user, actions }: HomeHeroProps) {
       </View>
 
       {actions.map((action) => (
-        <QuickActionButton key={action.id} action={action} />
+        <QuickActionButton
+          key={action.id}
+          action={action}
+          onPress={() => onActionPress(action.route)}
+        />
       ))}
     </View>
   );

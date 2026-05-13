@@ -4,7 +4,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -19,11 +19,37 @@ import {
 
 import { loginWithEmail } from "@/features/auth/services/auth-service";
 import { homeColors } from "@/features/home/constants/colors";
+import { supabase, supabaseConfigError } from "@/lib/supabase";
 
 export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const configError = supabaseConfigError;
+  const isConfigInvalid = Boolean(configError);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!supabase) {
+        return;
+      }
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          router.replace("/home");
+        }
+      } catch (err) {
+        console.error("Erro ao verificar sessão no login:", err);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   async function handleLogin() {
     if (!email.trim() || !password) {
@@ -34,7 +60,7 @@ export function LoginScreen() {
     try {
       setIsLoading(true);
       await loginWithEmail({ email, password });
-      router.replace("/");
+      router.replace("/home");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Não foi possível entrar.";
@@ -109,9 +135,15 @@ export function LoginScreen() {
               <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              disabled={isLoading}
-              style={[styles.loginButton, isLoading && styles.disabledButton]}
+            {configError ? (
+            <View style={styles.configErrorBox}>
+              <Text style={styles.configErrorText}>{configError}</Text>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+              disabled={isLoading || isConfigInvalid}
+              style={[styles.loginButton, (isLoading || isConfigInvalid) && styles.disabledButton]}
               onPress={handleLogin}
             >
               <Text style={styles.loginButtonText}>
@@ -260,6 +292,17 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.72,
+  },
+  configErrorBox: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: "#FFE5E2",
+    padding: 14,
+  },
+  configErrorText: {
+    color: "#D94B43",
+    fontSize: 14,
+    lineHeight: 20,
   },
   loginButtonText: {
     color: "#FFFFFF",

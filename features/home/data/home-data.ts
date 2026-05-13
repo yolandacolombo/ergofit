@@ -15,14 +15,17 @@ export const quickActions: QuickAction[] = [
   {
     id: "schedule",
     label: "Agendar consulta online",
+    route: "/agendar-consulta",
   },
   {
     id: "search-professionals",
     label: "Procurar fisioterapeutas",
+    route: "/fisioterapeutas",
   },
   {
     id: "instant-appointment",
     label: "Realizar consulta agora",
+    route: "/consulta-agora",
   },
 ];
 
@@ -74,21 +77,25 @@ export const bottomNavigationItems: BottomNavigationItem[] = [
     id: "home",
     label: "Home",
     icon: "⌂",
+    route: "/home",
     active: true,
   },
   {
     id: "physiotherapists",
     label: "Fisioterapeutas",
     icon: "⌕",
+    route: "/fisioterapeutas",
   },
   {
     id: "progress",
     label: "Progresso",
     icon: "⌁",
+    route: "/progresso",
   },
   {
     id: "profile",
     label: "Perfil",
     icon: "◉",
+    route: "/perfil",
   },
 ];

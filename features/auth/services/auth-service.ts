@@ -8,6 +8,7 @@ type LoginCredentials = {
 type SignupCredentials = LoginCredentials & {
   name: string;
   difficulty: string;
+  frequency: string;
 };
 
 export async function loginWithEmail({ email, password }: LoginCredentials) {
@@ -49,6 +50,7 @@ export async function signupWithEmail({
   email,
   name,
   difficulty,
+  frequency,
   password,
 }: SignupCredentials) {
   if (!supabase) {
@@ -64,6 +66,7 @@ export async function signupWithEmail({
       data: {
         name: name.trim(),
         physical_difficulty: difficulty.trim(),
+        weekly_frequency: frequency.trim(),
       },
     },
   });

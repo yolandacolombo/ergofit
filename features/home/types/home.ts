@@ -18,11 +18,13 @@ export type Workout = {
 export type QuickAction = {
   id: string;
   label: string;
+  route: string;
 };
 
 export type BottomNavigationItem = {
   id: string;
   label: string;
   icon: string;
+  route: string;
   active?: boolean;
 };

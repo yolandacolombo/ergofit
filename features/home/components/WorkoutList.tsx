@@ -5,13 +5,18 @@ import { WorkoutCard } from "./WorkoutCard";
 
 type WorkoutListProps = {
   workouts: Workout[];
+  onWorkoutPress: (workout: Workout) => void;
 };
 
-export function WorkoutList({ workouts }: WorkoutListProps) {
+export function WorkoutList({ workouts, onWorkoutPress }: WorkoutListProps) {
   return (
     <View style={styles.cardsArea}>
       {workouts.map((workout) => (
-        <WorkoutCard key={workout.id} workout={workout} />
+        <WorkoutCard
+          key={workout.id}
+          workout={workout}
+          onPress={() => onWorkoutPress(workout)}
+        />
       ))}
     </View>
   );

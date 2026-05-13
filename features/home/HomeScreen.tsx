@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
 
-import { BottomNavigation } from "./components/BottomNavigation";
 import { HomeHero } from "./components/HomeHero";
 import { WorkoutList } from "./components/WorkoutList";
 import { homeColors } from "./constants/colors";
 import {
-  bottomNavigationItems,
   fallbackWorkouts,
   quickActions,
   userProfile,
 } from "./data/home-data";
 import { getWorkouts } from "./services/workouts-service";
-import type { Workout } from "./types/home";
+import { supabase } from "@/lib/supabase";
+import type { Workout, UserProfile } from "./types/home";
 
 export function HomeScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>(fallbackWorkouts);
+  const [user, setUser] = useState<UserProfile>(userProfile);
+  const router = useRouter();
 
   useEffect(() => {
     getWorkouts()
@@ -27,17 +29,39 @@ export function HomeScreen() {
       .catch(() => {
         setWorkouts(fallbackWorkouts);
       });
+
+    const loadUserProfile = async () => {
+      if (!supabase) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const name = session?.user?.user_metadata?.name;
+      if (name) {
+        setUser((current) => ({
+          ...current,
+          name,
+        }));
+      }
+    };
+
+    loadUserProfile();
   }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <HomeHero user={userProfile} actions={quickActions} />
-          <WorkoutList workouts={workouts} />
+          <HomeHero
+            user={user}
+            actions={quickActions}
+            onActionPress={(route: string) => router.push(route as any)}
+          />
+          <WorkoutList workouts={workouts} onWorkoutPress={() => router.push('/treino' as any)} />
         </ScrollView>
-
-        <BottomNavigation items={bottomNavigationItems} />
       </View>
     </SafeAreaView>
   );

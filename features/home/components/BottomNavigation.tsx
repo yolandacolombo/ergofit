@@ -1,22 +1,27 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { homeColors } from "../constants/colors";
 import type { BottomNavigationItem } from "../types/home";
 
 type BottomNavigationProps = {
   items: BottomNavigationItem[];
+  onNavigate: (route: string) => void;
 };
 
-export function BottomNavigation({ items }: BottomNavigationProps) {
+export function BottomNavigation({ items, onNavigate }: BottomNavigationProps) {
   return (
     <View style={styles.bottomNav}>
       {items.map((item) => (
-        <View key={item.id} style={styles.navItem}>
+        <TouchableOpacity
+          key={item.id}
+          style={styles.navItem}
+          onPress={() => onNavigate(item.route)}
+        >
           <Text style={styles.navIcon}>{item.icon}</Text>
           <Text style={item.active ? styles.navTextActive : styles.navText}>
             {item.label}
           </Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
