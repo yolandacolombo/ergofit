@@ -7,10 +7,27 @@ import { Platform } from "react-native";
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+const normalizedSupabaseUrl = supabaseUrl?.trim();
+const normalizedSupabaseAnonKey = supabaseAnonKey?.trim();
+
+const isPublicClientKey =
+  normalizedSupabaseAnonKey?.startsWith("eyJ") ||
+  normalizedSupabaseAnonKey?.startsWith("sb_publishable_");
+
+export const supabaseConfigError = !normalizedSupabaseUrl
+  ? "Configure EXPO_PUBLIC_SUPABASE_URL no arquivo .env."
+  : !normalizedSupabaseAnonKey
+    ? "Configure EXPO_PUBLIC_SUPABASE_ANON_KEY no arquivo .env."
+    : normalizedSupabaseAnonKey.startsWith("sb_secret_")
+      ? "EXPO_PUBLIC_SUPABASE_ANON_KEY esta usando uma chave secret. Use a anon/public ou publishable key do Supabase."
+      : !isPublicClientKey
+        ? "EXPO_PUBLIC_SUPABASE_ANON_KEY parece invalida. Confira a anon/public ou publishable key do projeto no Supabase."
+        : null;
+
+export const isSupabaseConfigured = supabaseConfigError === null;
 
 if (!isSupabaseConfigured) {
-  console.warn("Supabase env vars are missing. Using local fallback data.");
+  console.warn(supabaseConfigError);
 }
 
 const memoryStorage = new Map<string, string>();
@@ -56,7 +73,7 @@ const serverSafeStorage = {
 };
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!, {
+  ? createClient(normalizedSupabaseUrl!, normalizedSupabaseAnonKey!, {
       auth: {
         storage: serverSafeStorage,
         autoRefreshToken: true,

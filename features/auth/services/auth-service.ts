@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseConfigError } from "@/lib/supabase";
 
 type LoginCredentials = {
   email: string;
@@ -12,7 +12,9 @@ type SignupCredentials = LoginCredentials & {
 
 export async function loginWithEmail({ email, password }: LoginCredentials) {
   if (!supabase) {
-    throw new Error("Configure as variaveis do Supabase no arquivo .env.");
+    throw new Error(
+      supabaseConfigError ?? "Configure as variaveis do Supabase no arquivo .env.",
+    );
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -27,6 +29,22 @@ export async function loginWithEmail({ email, password }: LoginCredentials) {
   return data;
 }
 
+function getSupabaseErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "Nao foi possivel concluir a operacao no Supabase.";
+  }
+
+  const details = error as Error & { code?: string; status?: number };
+  const metadata = [
+    details.code ? `codigo: ${details.code}` : null,
+    details.status ? `status: ${details.status}` : null,
+  ].filter(Boolean);
+
+  return metadata.length > 0
+    ? `${error.message} (${metadata.join(", ")})`
+    : error.message;
+}
+
 export async function signupWithEmail({
   email,
   name,
@@ -34,7 +52,9 @@ export async function signupWithEmail({
   password,
 }: SignupCredentials) {
   if (!supabase) {
-    throw new Error("Configure as variaveis do Supabase no arquivo .env.");
+    throw new Error(
+      supabaseConfigError ?? "Configure as variaveis do Supabase no arquivo .env.",
+    );
   }
 
   const { data, error } = await supabase.auth.signUp({
@@ -49,7 +69,11 @@ export async function signupWithEmail({
   });
 
   if (error) {
-    throw error;
+    throw new Error(getSupabaseErrorMessage(error));
+  }
+
+  if (!data.user) {
+    throw new Error("O Supabase nao retornou um usuario para este cadastro.");
   }
 
   return data;

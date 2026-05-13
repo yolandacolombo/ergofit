@@ -49,12 +49,12 @@ export function SignupScreen() {
       !form.password ||
       !form.confirmPassword
     ) {
-      Alert.alert("Cadastro", "Preencha todos os campos obrigatórios.");
+      Alert.alert("Cadastro", "Preencha todos os campos obrigatorios.");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      Alert.alert("Cadastro", "As senhas não conferem.");
+      Alert.alert("Cadastro", "As senhas nao conferem.");
       return;
     }
 
@@ -74,14 +74,14 @@ export function SignupScreen() {
 
       Alert.alert(
         "Cadastro criado",
-        "Verifique seu email se a confirmação estiver ativa no Supabase.",
+        "Verifique seu email se a confirmacao estiver ativa no Supabase.",
       );
       router.replace("/");
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Não foi possível criar sua conta.";
+          : "Nao foi possivel criar sua conta.";
       Alert.alert("Erro no cadastro", message);
     } finally {
       setIsLoading(false);
