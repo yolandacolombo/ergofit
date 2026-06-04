@@ -136,14 +136,17 @@ export function LoginScreen() {
             </TouchableOpacity>
 
             {configError ? (
-            <View style={styles.configErrorBox}>
-              <Text style={styles.configErrorText}>{configError}</Text>
-            </View>
-          ) : null}
+              <View style={styles.configErrorBox}>
+                <Text style={styles.configErrorText}>{configError}</Text>
+              </View>
+            ) : null}
 
-          <TouchableOpacity
+            <TouchableOpacity
               disabled={isLoading || isConfigInvalid}
-              style={[styles.loginButton, (isLoading || isConfigInvalid) && styles.disabledButton]}
+              style={[
+                styles.loginButton,
+                (isLoading || isConfigInvalid) && styles.disabledButton,
+              ]}
               onPress={handleLogin}
             >
               <Text style={styles.loginButtonText}>
@@ -168,9 +171,18 @@ export function LoginScreen() {
             </View>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Não possui conta? </Text>
-              <TouchableOpacity onPress={() => router.push("/signup")}>
-                <Text style={styles.signUpText}>Cadastre-se</Text>
+              <Text style={styles.footerText}>Cadastrar como: </Text>
+
+              <TouchableOpacity onPress={() => router.push("/signup") }>
+                <Text style={styles.linkText}>Usuário</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.footerText}> ou </Text>
+
+              <TouchableOpacity
+                onPress={() => router.push("/signup-fisioterapeuta")}
+              >
+                <Text style={styles.linkText}>Fisioterapeuta</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -223,10 +235,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.24)",
   },
   card: {
-    flex: 0.62,
+    flex: 0.75,
     backgroundColor: homeColors.white,
-    borderTopLeftRadius: 42,
-    borderTopRightRadius: 42,
+    borderRadius: 42,
     paddingHorizontal: 24,
     paddingTop: 34,
     shadowColor: "#000",
@@ -348,15 +359,38 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: 28,
+    marginBottom: 24,
+  },
+  footerSpacer: {
+    height: 16,
   },
   footerText: {
     color: "#8C8C8C",
     fontSize: 14,
+    textAlign: "center",
+  },
+  footerNote: {
+    color: "#9B9B9B",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 12,
   },
   signUpText: {
     color: homeColors.button,
     fontSize: 14,
     fontWeight: "800",
+  },
+  registerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkText: {
+    color: homeColors.button,
+    fontSize: 14,
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
 });
