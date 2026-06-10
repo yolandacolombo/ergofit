@@ -1,27 +1,82 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { homeColors } from '@/features/home/constants/colors';
+import { useEffect, useState } from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-const professionalsNow = [
-  { id: '1', name: 'Roberta da Silva', crefito: 'CREFITO-5 123456-F', available: true },
-  { id: '2', name: 'Paula de Oliveira', crefito: 'CREFITO-5 123456-F', available: true },
-];
+import { homeColors } from '@/features/home/constants/colors';
+import { supabase } from '@/lib/supabase';
+
+type Physiotherapist = {
+  id: number;
+  name: string;
+  crefito: string;
+  available: boolean;
+};
 
 export default function QuickAppointmentRoute() {
+  const [professionals, setProfessionals] = useState<Physiotherapist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfessionals();
+  }, []);
+
+  async function loadProfessionals() {
+    try {
+      const { data, error } = await supabase
+        .from('physiotherapists')
+        .select('id, name, crefito, available')
+        .eq('available', true)
+        .order('rating', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setProfessionals(data ?? []);
+    } catch (error) {
+      console.error('Erro ao carregar fisioterapeutas:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Realizar consulta agora</Text>
+
         <Text style={styles.subtitle}>
           Profissionais disponíveis neste momento para atendimento imediato.
         </Text>
 
-        {professionalsNow.map((professional) => (
-          <View key={professional.id} style={styles.card}>
-            <Text style={styles.professionalName}>{professional.name}</Text>
-            <Text style={styles.professionalMeta}>{professional.crefito}</Text>
-            <Text style={styles.availability}>Disponível agora</Text>
-          </View>
-        ))}
+        {loading ? (
+          <Text style={styles.message}>Carregando profissionais...</Text>
+        ) : professionals.length === 0 ? (
+          <Text style={styles.message}>
+            Nenhum profissional disponível no momento.
+          </Text>
+        ) : (
+          professionals.map((professional) => (
+            <View key={professional.id} style={styles.card}>
+              <Text style={styles.professionalName}>
+                {professional.name}
+              </Text>
+
+              <Text style={styles.professionalMeta}>
+                {professional.crefito}
+              </Text>
+
+              <Text style={styles.availability}>
+                Disponível agora
+              </Text>
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -68,5 +123,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: homeColors.button,
     fontWeight: '700',
+  },
+  message: {
+    marginTop: 20,
+    color: '#666',
+    fontSize: 15,
   },
 });

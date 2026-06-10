@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { homeColors } from '@/features/home/constants/colors';
+import { getCompletedWorkoutsCount } from '@/features/home/services/profile-service';
 
 const history = [
   { date: '10 Mai', workout: 'Treino de mobilidade' },
@@ -8,6 +10,12 @@ const history = [
 ];
 
 export default function ProgressRoute() {
+  const [completedWorkouts, setCompletedWorkouts] = useState(0);
+
+  useEffect(() => {
+    getCompletedWorkoutsCount().then(setCompletedWorkouts).catch(() => setCompletedWorkouts(0));
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -15,8 +23,8 @@ export default function ProgressRoute() {
         <Text style={styles.subtitle}>Veja sua evolução semanal e mensal.</Text>
 
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Treinos esta semana</Text>
-          <Text style={styles.metricValue}>3</Text>
+          <Text style={styles.metricLabel}>Treinos realizados</Text>
+          <Text style={styles.metricValue}>{completedWorkouts}</Text>
         </View>
 
         <View style={styles.metricCard}>

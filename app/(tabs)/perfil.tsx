@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { homeColors } from '@/features/home/constants/colors';
+import { getCompletedWorkoutsCount } from '@/features/home/services/profile-service';
 import { supabase } from '@/lib/supabase';
 
 type UserProfileState = {
@@ -9,6 +10,7 @@ type UserProfileState = {
   email: string;
   physicalDifficulty: string;
   weeklyFrequency: string;
+  completedWorkouts: number;
 };
 
 export default function ProfileRoute() {
@@ -18,6 +20,7 @@ export default function ProfileRoute() {
     email: '---',
     physicalDifficulty: '---',
     weeklyFrequency: '---',
+    completedWorkouts: 0,
   });
 
   useEffect(() => {
@@ -38,11 +41,14 @@ export default function ProfileRoute() {
 
       const metadata = user.user_metadata ?? {};
 
+      const completedWorkouts = await getCompletedWorkoutsCount();
+
       setProfile({
         name: metadata.name ?? user.email ?? 'Usuário',
         email: user.email ?? '---',
         physicalDifficulty: metadata.physical_difficulty ?? '---',
         weeklyFrequency: metadata.weekly_frequency ?? '---',
+        completedWorkouts,
       });
     };
 
@@ -78,6 +84,9 @@ export default function ProfileRoute() {
 
           <Text style={styles.label}>Frequência semanal desejada</Text>
           <Text style={styles.value}>{profile.weeklyFrequency}</Text>
+
+          <Text style={styles.label}>Treinos realizados</Text>
+          <Text style={styles.value}>{profile.completedWorkouts}</Text>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

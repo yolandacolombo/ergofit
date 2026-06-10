@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -24,6 +24,8 @@ type AvailabilityFilter = boolean | null;
 
 export default function PhysiotherapistsRoute() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const date = Array.isArray(params.date) ? params.date[0] : params.date;
   const [professionals, setProfessionals] = useState<Physiotherapist[]>([]);
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -31,6 +33,23 @@ export default function PhysiotherapistsRoute() {
     useState<AvailabilityFilter>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const formattedSelectedDate = useMemo(() => {
+    if (!date) {
+      return null;
+    }
+
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }, [date]);
 
   useEffect(() => {
     let isActive = true;
@@ -42,6 +61,7 @@ export default function PhysiotherapistsRoute() {
       search,
       state: stateFilter,
       available: availabilityFilter,
+      date: date ?? undefined,
     })
       .then((remoteProfessionals) => {
         if (isActive) {
@@ -51,11 +71,13 @@ export default function PhysiotherapistsRoute() {
       .catch((error) => {
         if (isActive) {
           setProfessionals([]);
-          setErrorMessage(
+          const errorText =
             error instanceof Error
               ? error.message
-              : "Nao foi possivel carregar os fisioterapeutas.",
-          );
+              : error && typeof error === "object"
+              ? JSON.stringify(error, null, 2)
+              : String(error);
+          setErrorMessage(errorText || "Nao foi possivel carregar os fisioterapeutas.");
         }
       })
       .finally(() => {
@@ -67,7 +89,7 @@ export default function PhysiotherapistsRoute() {
     return () => {
       isActive = false;
     };
-  }, [availabilityFilter, search, stateFilter]);
+  }, [availabilityFilter, search, stateFilter, date]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -76,6 +98,11 @@ export default function PhysiotherapistsRoute() {
         <Text style={styles.subtitle}>
           Profissionais carregados do Supabase com filtros aplicados no banco.
         </Text>
+        {formattedSelectedDate ? (
+          <Text style={styles.selectedDateText}>
+            Filtro ativo: profissionais disponíveis em {formattedSelectedDate}.
+          </Text>
+        ) : null}
 
         <View style={styles.filters}>
           <View style={styles.searchBox}>
@@ -150,7 +177,9 @@ export default function PhysiotherapistsRoute() {
         {!isLoading && !errorMessage && professionals.length === 0 ? (
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
-              Nenhum fisioterapeuta encontrado para esses filtros.
+              {date
+                ? 'Nenhum fisioterapeuta disponível para esta data.'
+                : 'Nenhum fisioterapeuta encontrado para esses filtros.'}
             </Text>
           </View>
         ) : null}
@@ -189,7 +218,7 @@ export default function PhysiotherapistsRoute() {
             </Text>
             <TouchableOpacity
               style={styles.button}
-              onPress={() => router.push("/treino")}
+              onPress={() => router.push("/treino" as any)}
             >
               <Text style={styles.buttonText}>Ver treino recomendado</Text>
             </TouchableOpacity>
@@ -244,6 +273,11 @@ const styles = StyleSheet.create({
     color: "#5D5D5D",
     fontSize: 15,
     marginBottom: 4,
+  },
+  selectedDateText: {
+    color: "#5D5D5D",
+    fontSize: 14,
+    marginBottom: 8,
   },
   filters: {
     gap: 12,

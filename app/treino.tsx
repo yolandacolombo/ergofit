@@ -1,7 +1,33 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import { homeColors } from '@/features/home/constants/colors';
+import { markWorkoutAsCompleted } from '@/features/home/services/profile-service';
 
 export default function WorkoutRoute() {
+  const router = useRouter();
+  const [completed, setCompleted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleMarkCompleted(value: boolean) {
+    if (!value || completed) {
+      setCompleted(value);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const nextCount = await markWorkoutAsCompleted();
+      setCompleted(true);
+      Alert.alert('Treino marcado', `Você concluiu este treino. Agora possui ${nextCount} treino(s) realizado(s).`);
+    } catch (error) {
+      Alert.alert('Erro', error instanceof Error ? error.message : 'Não foi possível atualizar o treino.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -30,7 +56,21 @@ export default function WorkoutRoute() {
           <Text style={styles.sectionTitle}>Feedback</Text>
           <Text style={styles.text}>Deixe sua avaliação ao finalizar o treino.</Text>
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => handleMarkCompleted(!completed)}
+            disabled={isSaving}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons
+              name={completed ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              size={24}
+              color={completed ? homeColors.button : '#9E9E9E'}
+            />
+            <Text style={styles.checkboxLabel}>{isSaving ? 'Salvando...' : 'Treino realizado'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/feedback')}>
             <Text style={styles.buttonText}>Enviar feedback</Text>
           </TouchableOpacity>
         </View>
@@ -92,5 +132,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
+  checkboxLabel: {
+    color: '#333333',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
