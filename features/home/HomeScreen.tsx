@@ -96,8 +96,18 @@ export function HomeScreen() {
 
           <WorkoutList
             workouts={workouts}
-            onWorkoutPress={() =>
-              router.push("/treino" as any)
+            onWorkoutPress={(workout) =>
+              router.push({
+                pathname: "/treino",
+                params: {
+                  id: workout.id,
+                  professional: workout.professional,
+                  objective: workout.objective,
+                  condition: workout.condition,
+                  duration: workout.duration,
+                  location: workout.location,
+                },
+              } as any)
             }
           />
         </ScrollView>

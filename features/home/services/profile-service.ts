@@ -1,5 +1,17 @@
 import { supabase } from "@/lib/supabase";
 
+export type WorkoutHistoryEntry = {
+  completedAt: string;
+  objective: string;
+  professional: string;
+};
+
+export type ProgressData = {
+  totalCompleted: number;
+  monthlyCompleted: number;
+  history: WorkoutHistoryEntry[];
+};
+
 export async function getCompletedWorkoutsCount(): Promise<number> {
   if (!supabase) {
     return 0;
@@ -15,25 +27,99 @@ export async function getCompletedWorkoutsCount(): Promise<number> {
       return 0;
     }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("completed_workouts")
-      .eq("id", user.id)
-      .maybeSingle();
+    const { count, error } = await supabase
+      .from("workout_completions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
     if (error) {
-      console.error("Erro ao buscar perfil:", error);
+      console.error("Erro ao buscar treinos concluídos:", error);
       return 0;
     }
 
-    return Number(data?.completed_workouts ?? 0);
+    return count ?? 0;
   } catch (error) {
     console.error("Erro inesperado:", error);
     return 0;
   }
 }
 
-export async function markWorkoutAsCompleted(): Promise<number> {
+export async function getProgressData(): Promise<ProgressData> {
+  if (!supabase) {
+    return { totalCompleted: 0, monthlyCompleted: 0, history: [] };
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { totalCompleted: 0, monthlyCompleted: 0, history: [] };
+  }
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [totalResult, monthlyResult, historyResult] = await Promise.all([
+    supabase
+      .from("workout_completions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id),
+
+    supabase
+      .from("workout_completions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("completed_at", startOfMonth.toISOString()),
+
+    supabase
+      .from("workout_completions")
+      .select("completed_at, workouts(objective, professional)")
+      .eq("user_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const history: WorkoutHistoryEntry[] = (historyResult.data ?? []).map(
+    (row: any) => ({
+      completedAt: row.completed_at,
+      objective: row.workouts?.objective ?? "Treino",
+      professional: row.workouts?.professional ?? "",
+    })
+  );
+
+  return {
+    totalCompleted: totalResult.count ?? 0,
+    monthlyCompleted: monthlyResult.count ?? 0,
+    history,
+  };
+}
+
+export async function isWorkoutCompleted(workoutId: number): Promise<boolean> {
+  if (!supabase) {
+    return false;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  const { count } = await supabase
+    .from("workout_completions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("workout_id", workoutId);
+
+  return (count ?? 0) > 0;
+}
+
+export async function markWorkoutAsCompleted(workoutId: number): Promise<void> {
   if (!supabase) {
     throw new Error("Supabase não inicializado.");
   }
@@ -44,7 +130,6 @@ export async function markWorkoutAsCompleted(): Promise<number> {
   } = await supabase.auth.getUser();
 
   if (userError) {
-    console.error("Erro ao obter usuário:", userError);
     throw new Error("Erro ao verificar autenticação.");
   }
 
@@ -52,41 +137,13 @@ export async function markWorkoutAsCompleted(): Promise<number> {
     throw new Error("Você precisa estar logado para marcar o treino.");
   }
 
-  const { data: currentProfile, error: fetchError } = await supabase
-    .from("profiles")
-    .select("completed_workouts")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { error } = await supabase.from("workout_completions").insert({
+    user_id: user.id,
+    workout_id: workoutId,
+  });
 
-  if (fetchError) {
-    console.error("Erro ao buscar perfil:", fetchError);
-    throw new Error(fetchError.message);
+  if (error) {
+    console.error("Erro ao registrar conclusão:", error);
+    throw new Error(error.message || "Não foi possível registrar o treino.");
   }
-
-  if (!currentProfile) {
-    throw new Error(
-      "Perfil não encontrado. Faça logout e login novamente."
-    );
-  }
-
-  const nextCount = Number(currentProfile.completed_workouts ?? 0) + 1;
-
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({
-      completed_workouts: nextCount,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
-
-  if (updateError) {
-    console.error("Erro ao atualizar perfil:", updateError);
-
-    throw new Error(
-      updateError.message ||
-        "Não foi possível atualizar o treino."
-    );
-  }
-
-  return nextCount;
 }

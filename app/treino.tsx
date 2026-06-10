@@ -1,15 +1,31 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { homeColors } from '@/features/home/constants/colors';
-import { markWorkoutAsCompleted } from '@/features/home/services/profile-service';
+import { isWorkoutCompleted, markWorkoutAsCompleted } from '@/features/home/services/profile-service';
+
+type WorkoutParams = {
+  id: string;
+  professional: string;
+  objective: string;
+  condition: string;
+  duration: string;
+  location: string;
+};
 
 export default function WorkoutRoute() {
   const router = useRouter();
+  const params = useLocalSearchParams<WorkoutParams>();
   const [completed, setCompleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (params.id) {
+      isWorkoutCompleted(Number(params.id)).then(setCompleted).catch(() => {});
+    }
+  }, [params.id]);
 
   async function handleMarkCompleted(value: boolean) {
     if (!value || completed) {
@@ -19,15 +35,16 @@ export default function WorkoutRoute() {
 
     setIsSaving(true);
     try {
-      const nextCount = await markWorkoutAsCompleted();
+      await markWorkoutAsCompleted(Number(params.id));
       setCompleted(true);
-      Alert.alert('Treino marcado', `Você concluiu este treino. Agora possui ${nextCount} treino(s) realizado(s).`);
+      Alert.alert('Treino concluído', 'Treino registrado com sucesso!');
     } catch (error) {
-      Alert.alert('Erro', error instanceof Error ? error.message : 'Não foi possível atualizar o treino.');
+      Alert.alert('Erro', error instanceof Error ? error.message : 'Não foi possível registrar o treino.');
     } finally {
       setIsSaving(false);
     }
   }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -36,19 +53,19 @@ export default function WorkoutRoute() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Objetivo</Text>
-          <Text style={styles.text}>Hipertrofia muscular e fortalecimento da lombar.</Text>
+          <Text style={styles.text}>{params.objective ?? '—'}</Text>
 
           <Text style={styles.sectionTitle}>Condição</Text>
-          <Text style={styles.text}>Dor na lombar e mobilidade reduzida.</Text>
+          <Text style={styles.text}>{params.condition ?? '—'}</Text>
 
           <Text style={styles.sectionTitle}>Duração</Text>
-          <Text style={styles.text}>1 hora</Text>
+          <Text style={styles.text}>{params.duration ?? '—'}</Text>
 
           <Text style={styles.sectionTitle}>Local recomendado</Text>
-          <Text style={styles.text}>Academia ou casa com apoio adequado.</Text>
+          <Text style={styles.text}>{params.location ?? '—'}</Text>
 
           <Text style={styles.sectionTitle}>Profissional</Text>
-          <Text style={styles.text}>Roberta da Silva • CREFITO-5 123456-F</Text>
+          <Text style={styles.text}>{params.professional ?? '—'}</Text>
 
           <Text style={styles.sectionTitle}>Vídeos</Text>
           <Text style={styles.text}>Acompanhe os exercícios com instruções em vídeo.</Text>
@@ -59,7 +76,7 @@ export default function WorkoutRoute() {
           <TouchableOpacity
             style={styles.checkboxRow}
             onPress={() => handleMarkCompleted(!completed)}
-            disabled={isSaving}
+            disabled={isSaving || completed}
             activeOpacity={0.8}
           >
             <MaterialCommunityIcons
