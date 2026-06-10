@@ -11,6 +11,15 @@ type SignupCredentials = LoginCredentials & {
   frequency: string;
 };
 
+type PhysiotherapistSignupCredentials = LoginCredentials & {
+  name: string;
+  crefito: string;
+  specialty: string;
+  state: string;
+  clinic?: string;
+  phone: string;
+};
+
 export async function loginWithEmail({ email, password }: LoginCredentials) {
   if (!supabase) {
     throw new Error(
@@ -19,23 +28,40 @@ export async function loginWithEmail({ email, password }: LoginCredentials) {
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim(),
+    email: normalizeEmail(email),
     password,
   });
 
   if (error) {
-    throw error;
+    throw new Error(getSupabaseErrorMessage(error, "login"));
   }
 
   return data;
 }
 
-function getSupabaseErrorMessage(error: unknown) {
+function getSupabaseErrorMessage(error: unknown, context?: "login") {
   if (!(error instanceof Error)) {
     return "Nao foi possivel concluir a operacao no Supabase.";
   }
 
   const details = error as Error & { code?: string; status?: number };
+
+  if (context === "login") {
+    if (
+      details.code === "invalid_credentials" ||
+      error.message.toLowerCase().includes("invalid login credentials")
+    ) {
+      return "Email ou senha incorretos. Se voce acabou de se cadastrar, confirme se o cadastro foi salvo no Supabase e se o email ja foi confirmado.";
+    }
+
+    if (
+      details.code === "email_not_confirmed" ||
+      error.message.toLowerCase().includes("email not confirmed")
+    ) {
+      return "Confirme seu email antes de entrar. Verifique a caixa de entrada ou desative a confirmacao de email no painel do Supabase durante o desenvolvimento.";
+    }
+  }
+
   const metadata = [
     details.code ? `codigo: ${details.code}` : null,
     details.status ? `status: ${details.status}` : null,
@@ -64,6 +90,7 @@ export async function signupWithEmail({
     password,
     options: {
       data: {
+        role: "user",
         name: name.trim(),
         physical_difficulty: difficulty.trim(),
         weekly_frequency: frequency.trim(),
@@ -80,4 +107,51 @@ export async function signupWithEmail({
   }
 
   return data;
+}
+
+export async function signupPhysiotherapistWithEmail({
+  email,
+  name,
+  crefito,
+  specialty,
+  state,
+  clinic,
+  phone,
+  password,
+}: PhysiotherapistSignupCredentials) {
+  if (!supabase) {
+    throw new Error(
+      supabaseConfigError ?? "Configure as variaveis do Supabase no arquivo .env.",
+    );
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizeEmail(email),
+    password,
+    options: {
+      data: {
+        role: "physiotherapist",
+        name: name.trim(),
+        crefito: crefito.trim(),
+        specialty: specialty.trim(),
+        state: state.trim().toUpperCase(),
+        clinic: clinic?.trim() ?? "",
+        phone: phone.trim(),
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error));
+  }
+
+  if (!data.user) {
+    throw new Error("O Supabase nao retornou um usuario para este cadastro.");
+  }
+
+  return data;
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }

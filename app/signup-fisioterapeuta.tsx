@@ -13,7 +13,9 @@ import {
   View,
 } from "react-native";
 
+import { signupPhysiotherapistWithEmail } from "@/features/auth/services/auth-service";
 import { homeColors } from "@/features/home/constants/colors";
+import { supabaseConfigError } from "@/lib/supabase";
 
 const { height } = Dimensions.get("window");
 
@@ -30,6 +32,8 @@ export default function ProfessionalSignupRoute() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const configError = supabaseConfigError;
+  const isConfigInvalid = Boolean(configError);
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((currentForm) => ({
@@ -49,32 +53,47 @@ export default function ProfessionalSignupRoute() {
       !form.password ||
       !form.confirmPassword
     ) {
-      Alert.alert("Cadastro", "Preencha todos os campos obrigatórios.");
+      Alert.alert("Cadastro", "Preencha todos os campos obrigatorios.");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      Alert.alert("Cadastro", "As senhas não conferem.");
+      Alert.alert("Cadastro", "As senhas nao conferem.");
       return;
     }
 
     if (form.password.length < 6) {
-      Alert.alert(
-        "Cadastro",
-        "A senha precisa ter pelo menos 6 caracteres.",
-      );
+      Alert.alert("Cadastro", "A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      setIsLoading(true);
+      await signupPhysiotherapistWithEmail({
+        email: form.email,
+        name: form.name,
+        crefito: form.crefito,
+        specialty: form.specialty,
+        state: form.state,
+        clinic: form.clinic,
+        phone: form.phone,
+        password: form.password,
+      });
+
       Alert.alert(
-        "Cadastro recebido",
-        "Cadastro de fisioterapeuta enviado. Este fluxo é demonstrativo e não adiciona o profissional ao banco neste momento.",
+        "Cadastro criado",
+        "Cadastro salvo no Supabase. Se a confirmacao de email estiver ativa, confirme seu email antes de entrar.",
       );
       router.replace("/login");
-    }, 800);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel criar o cadastro de fisioterapeuta.";
+      Alert.alert("Erro no cadastro", message);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -129,7 +148,6 @@ export default function ProfessionalSignupRoute() {
               value={form.state}
               onChangeText={(value) => updateField("state", value)}
             />
-
             <RequiredInput
               placeholder="Telefone para contato"
               value={form.phone}
@@ -149,9 +167,18 @@ export default function ProfessionalSignupRoute() {
             />
           </View>
 
+          {configError ? (
+            <View style={styles.configErrorBox}>
+              <Text style={styles.configErrorText}>{configError}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity
-            disabled={isLoading}
-            style={[styles.signupButton, isLoading && styles.disabledButton]}
+            disabled={isLoading || isConfigInvalid}
+            style={[
+              styles.signupButton,
+              (isLoading || isConfigInvalid) && styles.disabledButton,
+            ]}
             onPress={handleSignup}
           >
             <Text style={styles.signupButtonText}>
@@ -284,6 +311,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     marginLeft: 6,
+  },
+  configErrorBox: {
+    marginTop: 18,
+    borderRadius: 16,
+    backgroundColor: "#FFE5E2",
+    padding: 14,
+  },
+  configErrorText: {
+    color: "#D94B43",
+    fontSize: 14,
+    lineHeight: 20,
   },
   signupButton: {
     height: 46,

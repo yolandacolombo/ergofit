@@ -36,8 +36,8 @@ export function SignupScreen() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [signupStatus, setSignupStatus] = useState("");
   const configError = supabaseConfigError;
-  const isConfigInvalid = Boolean(configError);
 
   function updateField(field: SignupField, value: string) {
     setForm((currentForm) => ({
@@ -47,6 +47,16 @@ export function SignupScreen() {
   }
 
   async function handleSignup() {
+    console.log("Clique no cadastro de usuario recebido.");
+    setSignupStatus("Validando dados do cadastro...");
+
+    if (configError) {
+      console.error("Configuracao do Supabase invalida:", configError);
+      setSignupStatus(configError);
+      Alert.alert("Configuracao do Supabase", configError);
+      return;
+    }
+
     if (
       !form.email.trim() ||
       !form.name.trim() ||
@@ -55,23 +65,27 @@ export function SignupScreen() {
       !form.password ||
       !form.confirmPassword
     ) {
+      setSignupStatus("Preencha todos os campos obrigatorios.");
       Alert.alert("Cadastro", "Preencha todos os campos obrigatorios.");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
+      setSignupStatus("As senhas nao conferem.");
       Alert.alert("Cadastro", "As senhas nao conferem.");
       return;
     }
 
     if (form.password.length < 6) {
+      setSignupStatus("A senha precisa ter pelo menos 6 caracteres.");
       Alert.alert("Cadastro", "A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
 
     try {
       setIsLoading(true);
-      await signupWithEmail({
+      setSignupStatus("Enviando cadastro para o Supabase...");
+      const data = await signupWithEmail({
         email: form.email,
         name: form.name,
         difficulty: form.difficulty,
@@ -79,16 +93,31 @@ export function SignupScreen() {
         password: form.password,
       });
 
+      console.log("Cadastro de usuario criado:", {
+        userId: data.user?.id,
+        email: data.user?.email,
+        hasSession: Boolean(data.session),
+      });
+
+      setSignupStatus(
+        data.session
+          ? "Cadastro criado. Redirecionando para a home..."
+          : "Cadastro criado. Redirecionando para o login...",
+      );
       Alert.alert(
         "Cadastro criado",
-        "Verifique seu email se a confirmacao estiver ativa no Supabase.",
+        data.session
+          ? "Sua conta foi criada e voce ja esta conectado."
+          : "Verifique seu email se a confirmacao estiver ativa no Supabase.",
       );
-      router.replace("/login");
+      router.replace(data.session ? "/home" : "/login");
     } catch (error) {
+      console.error("Erro no cadastro de usuario:", error);
       const message =
         error instanceof Error
           ? error.message
           : "Nao foi possivel criar sua conta.";
+      setSignupStatus(message);
       Alert.alert("Erro no cadastro", message);
     } finally {
       setIsLoading(false);
@@ -158,9 +187,15 @@ export function SignupScreen() {
             </View>
           ) : null}
 
+          {signupStatus ? (
+            <View style={styles.statusBox}>
+              <Text style={styles.statusText}>{signupStatus}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity
-            disabled={isLoading || isConfigInvalid}
-            style={[styles.signupButton, (isLoading || isConfigInvalid) && styles.disabledButton]}
+            disabled={isLoading}
+            style={[styles.signupButton, isLoading && styles.disabledButton]}
             onPress={handleSignup}
           >
             <Text style={styles.signupButtonText}>
@@ -317,6 +352,17 @@ const styles = StyleSheet.create({
   },
   configErrorText: {
     color: "#D94B43",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  statusBox: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: "#EEF7F0",
+    padding: 14,
+  },
+  statusText: {
+    color: "#3F6F4A",
     fontSize: 14,
     lineHeight: 20,
   },
