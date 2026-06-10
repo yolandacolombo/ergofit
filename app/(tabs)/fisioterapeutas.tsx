@@ -95,9 +95,6 @@ export default function PhysiotherapistsRoute() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Fisioterapeutas</Text>
-        <Text style={styles.subtitle}>
-          Profissionais carregados do Supabase com filtros aplicados no banco.
-        </Text>
         {formattedSelectedDate ? (
           <Text style={styles.selectedDateText}>
             Filtro ativo: profissionais disponíveis em {formattedSelectedDate}.
