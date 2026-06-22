@@ -23,7 +23,12 @@ const today = new Date();
 const currentYear = today.getFullYear();
 const currentMonth = today.getMonth();
 const screenWidth = Dimensions.get('window').width;
-const dayTileSize = Math.floor((screenWidth - 96) / 7);
+const contentHorizontalPadding = 24;
+const cardHorizontalPadding = 18;
+const dayGridGap = 8;
+const dayTileSize = Math.floor(
+  (screenWidth - contentHorizontalPadding * 2 - cardHorizontalPadding * 2 - dayGridGap * 6) / 7,
+);
 
 function formatDate(date: Date) {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -31,22 +36,53 @@ function formatDate(date: Date) {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+type CalendarDay = {
+  label: number;
+  dateString: string;
+  isCurrentMonth: boolean;
+};
+
 function buildCalendarDays(year: number, month: number) {
   const totalDays = new Date(year, month + 1, 0).getDate();
   const firstWeekday = new Date(year, month, 1).getDay();
+  const previousMonthTotalDays = new Date(year, month, 0).getDate();
+  const days: CalendarDay[] = [];
 
-  const paddingDays = Array.from({ length: firstWeekday }, (_, index) => index);
-  const days = Array.from({ length: totalDays }, (_, index) => index + 1);
+  for (let offset = firstWeekday; offset > 0; offset -= 1) {
+    const day = previousMonthTotalDays - offset + 1;
+    const date = new Date(year, month - 1, day);
+    days.push({
+      label: day,
+      dateString: formatDate(date),
+      isCurrentMonth: false,
+    });
+  }
 
-  return { paddingDays, days };
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(year, month, day);
+    days.push({
+      label: day,
+      dateString: formatDate(date),
+      isCurrentMonth: true,
+    });
+  }
+
+  const totalCells = Math.ceil(days.length / 7) * 7;
+  for (let day = 1; days.length < totalCells; day += 1) {
+    const date = new Date(year, month + 1, day);
+    days.push({
+      label: day,
+      dateString: formatDate(date),
+      isCurrentMonth: false,
+    });
+  }
+
+  return days;
 }
 
 export default function ScheduleAppointmentRoute() {
   const router = useRouter();
-  const calendar = useMemo(
-    () => buildCalendarDays(currentYear, currentMonth),
-    [],
-  );
+  const calendarDays = useMemo(() => buildCalendarDays(currentYear, currentMonth), []);
 
   function handleSelectDate(dateString: string) {
     router.push({
@@ -71,18 +107,24 @@ export default function ScheduleAppointmentRoute() {
             ))}
           </View>
           <View style={styles.daysGrid}>
-            {calendar.paddingDays.map((index) => (
-              <View key={`empty-${index}`} style={[styles.dayTile, styles.dayTileEmpty]} />
-            ))}
-            {calendar.days.map((day) => {
-              const dateString = formatDate(new Date(currentYear, currentMonth, day));
+            {calendarDays.map((day) => {
               return (
                 <TouchableOpacity
-                  key={dateString}
-                  style={[styles.dayTile, styles.dayTileDefault]}
-                  onPress={() => handleSelectDate(dateString)}
+                  key={day.dateString}
+                  style={[
+                    styles.dayTile,
+                    day.isCurrentMonth ? styles.dayTileDefault : styles.dayTileMuted,
+                  ]}
+                  onPress={() => handleSelectDate(day.dateString)}
                 >
-                  <Text style={styles.dayText}>{day}</Text>
+                  <Text
+                    style={[
+                      styles.dayText,
+                      !day.isCurrentMonth && styles.dayTextMuted,
+                    ]}
+                  >
+                    {day.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -103,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: homeColors.background,
   },
   content: {
-    padding: 24,
+    padding: contentHorizontalPadding,
     gap: 20,
   },
   title: {
@@ -119,7 +161,7 @@ const styles = StyleSheet.create({
   calendarCard: {
     backgroundColor: homeColors.white,
     borderRadius: 18,
-    padding: 18,
+    padding: cardHorizontalPadding,
     gap: 14,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -145,7 +187,7 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: dayGridGap,
   },
   dayTile: {
     width: dayTileSize,
@@ -154,15 +196,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayTileEmpty: {
-    backgroundColor: 'transparent',
-  },
   dayTileDefault: {
     backgroundColor: '#F5F2EE',
+  },
+  dayTileMuted: {
+    backgroundColor: '#FBF8F4',
   },
   dayText: {
     color: '#333333',
     fontWeight: '700',
+  },
+  dayTextMuted: {
+    color: '#B8B0A4',
   },
   note: {
     color: '#7A7A7A',

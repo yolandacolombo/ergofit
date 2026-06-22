@@ -39,7 +39,24 @@ export default function PhysiotherapistsRoute() {
       return null;
     }
 
-    const parsed = new Date(date);
+    const [yearText, monthText, dayText] = date.split("-");
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+
+    if (
+      Number.isNaN(year) ||
+      Number.isNaN(month) ||
+      Number.isNaN(day) ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31
+    ) {
+      return null;
+    }
+
+    const parsed = new Date(year, month - 1, day);
     if (Number.isNaN(parsed.getTime())) {
       return null;
     }
